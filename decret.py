@@ -24,6 +24,7 @@ import re
 import subprocess
 import sys
 import time
+import jinja2
 
 import requests
 from selenium import webdriver
@@ -121,6 +122,12 @@ def arg_parsing(args=None):
         dest="do_not_use_sudo",
         action="store_true",
         help="Do not use sudo to run docker commands",
+    )
+    parser.add_argument(
+        "--only-create-dockerfile",
+        dest="only_create_dockerfile",
+        action="store_true",
+        help="Do not build nor run the created docker",
     )
     parser.add_argument(
         "--cache-main-json-file",
@@ -445,24 +452,24 @@ def write_sources(args: argparse.Namespace, snapshot_id: str, vuln_fixed: bool):
             sources_file.write(f"deb {url} {rel} main\n")
 
 
-def write_dockerfile(args: argparse.Namespace):
+def write_dockerfile(args: argparse.Namespace, cve_details):
     target_dockerfile = args.directory / "Dockerfile"
     decret_rootpath = Path(__file__).resolve().parent
-    src_dockerfile = decret_rootpath / "Dockerfile.template"
-    dockerfile_content = [src_dockerfile.read_bytes()]
-    print(args.run_lines)
-    if args.run_lines:
-        dockerfile_content.append(b"")
-        for line in args.run_lines:
-            dockerfile_content.append(("RUN " + line).encode("UTF-8"))
-    if args.cmd_line:
-        dockerfile_content.append(b"")
-        dockerfile_content.append(("CMD " + args.cmd_line).encode("UTF-8"))
-        dockerfile_content.append(b"")
-    target_dockerfile.write_bytes(b"\n".join(dockerfile_content))
+    src_template = decret_rootpath / "Dockerfile.template"
+    template_content = src_template.read_text()
+    template = jinja2.Environment().from_string(template_content)
 
+    # TODO: This should be removed from here, and be placed in the
+    # different dedicated templates for each release
+    if args.release in DEBIAN_RELEASES[:6]:
+        apt_flag = "--force-yes"
+    else:
+        apt_flag = "--allow-unauthenticated --allow-downgrades"
 
-def build_docker(args, cve_details):
+    # TODO: This should be customizable
+    default_packages = " ".join(["aptitude", "nano", "adduser"])
+
+    # TODO: Clean that up?
     binary_packages = []
     fixed_version = ""
     for item in cve_details:
@@ -471,14 +478,21 @@ def build_docker(args, cve_details):
             binary_packages.extend(bin_name_and_version)
             fixed_version = fixed_version + f"{bin_name}={item['fixed_version']} "
 
+    content = template.render(
+        debian_release=args.release,
+        apt_flag=apt_flag,
+        default_packages=default_packages,
+        package_name=" ".join(binary_packages),
+        fixed_version=fixed_version,
+        run_lines=args.run_lines,
+        cmd_line=args.cmd_line
+    )
+    target_dockerfile.write_text(content)
+
+
+def build_docker(args):
     print("Building the Docker image.")
     docker_image_name = f"{args.release}/cve-{args.cve_number}"
-    default_packages = ["aptitude", "nano", "adduser"]
-
-    if args.release in DEBIAN_RELEASES[:6]:
-        apt_flag = "--force-yes"
-    else:
-        apt_flag = "--allow-unauthenticated --allow-downgrades"
 
     if args.do_not_use_sudo:
         build_cmd = []
@@ -486,14 +500,6 @@ def build_docker(args, cve_details):
         build_cmd = ["sudo"]
     build_cmd.extend(["docker", "build"])
     build_cmd.extend(["-t", docker_image_name])
-    for arg_name, arg_value in [
-        ("DEFAULT_PACKAGE", " ".join(default_packages)),
-        ("DEBIAN_RELEASE", args.release),
-        ("PACKAGE_NAME", " ".join(binary_packages)),
-        ("APT_FLAG", apt_flag),
-        ("FIXED_VERSION", fixed_version),
-    ]:
-        build_cmd.extend(["--build-arg", f"{arg_name}={arg_value}"])
     build_cmd.append(args.dirname)
 
     try:
@@ -593,9 +599,12 @@ def main():  # pragma: no cover
         print(f"\n\nVulnerability unfixed. Using a {LATEST_RELEASE} container.\n\n")
         args.release = LATEST_RELEASE
 
-    write_dockerfile(args)
+    write_dockerfile(args, cve_details)
     write_cmdline(args)
-    build_docker(args, cve_details)
+    if args.only_create_dockerfile:
+        print("My work here is done.")
+        return
+    build_docker(args)
     run_docker(args)
 
 

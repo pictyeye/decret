@@ -1,15 +1,17 @@
-ARG DEBIAN_RELEASE
-FROM debian:${DEBIAN_RELEASE}
+FROM debian:{{debian_release}}
 
 COPY snapshot.list /etc/apt/sources.list.d/snapshot.list
 
-ARG DEFAULT_PACKAGE APT_FLAG
-RUN apt-get -o Acquire::Check-Valid-Until=false -o Acquire::AllowInsecureRepositories=true -o Acquire::AllowDowngradeToInsecureRepositories=true update || true
-RUN apt-get install -y ${APT_FLAG} --fix-missing ${DEFAULT_PACKAGE} || (printf "\nCouldn't install basic packages %s.\n" "${DEFAULT_PACKAGE}" >&2 && false)
-
-ARG PACKAGE_NAME APT_FLAG FIXED_VERSION
-RUN DEBIAN_FRONTEND=non-interactive aptitude -y --allow-untrusted -o Aptitude::ProblemResolver::SolutionCost='100*canceled-actions,200*removals' install ${PACKAGE_NAME} || (echo "\n\n /!\\ WARNING /!\\ \n\nThe vulnerable packages could not be installed. Please provide the bin-package name with '-p' option (see -h for help).\nCheck also that you are using the right Debian version.\nFinally, you can try to add an other version, older than ${FIXED_VERSION}, by running the command : apt-cache policy package_name\nThen install the desired version with :  aptitude install package_name=version\n\n /!\\ WARNING /!\\ \n\n" >&2)
+RUN apt-get -o Acquire::Check-Valid-Until=false -o Acquire::AllowInsecureRepositories=true -o Acquire::AllowDowngradeToInsecureRepositories=true update
+{% if default_packages %}RUN apt-get install -y {{apt_flag}} --fix-missing {{default_packages}}
+{% endif %}
+RUN DEBIAN_FRONTEND=non-interactive aptitude -y --allow-untrusted -o Aptitude::ProblemResolver::SolutionCost='100*canceled-actions,200*removals' install {{package_name}}
 
 ARG USERNAME=toto
 ARG PASSWORD=toto
 RUN useradd -m ${USERNAME} && printf "${PASSWORD}\n${PASSWORD}\n" | passwd ${USERNAME} 2> /dev/null
+
+{% if run_lines %}{% for line in run_lines %}RUN {{line}}
+{% endfor %}{% endif %}
+{% if cmd_line %}CMD {{cmd_line}}
+{% endif %}
