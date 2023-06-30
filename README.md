@@ -5,7 +5,7 @@ This tool reproduces a vulnerable Debian environment for a given CVE number.
 
 ## License 
 
-Copyright (c) 2023 Orange  
+Copyright (c) 2023 Orange
 This code is released under the terms of the BSD 3-Clause license. See the `license.txt` file for more information.
 
 
