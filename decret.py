@@ -459,17 +459,13 @@ def write_dockerfile(args: argparse.Namespace, cve_details):
     template_content = src_template.read_text()
     template = jinja2.Environment().from_string(template_content)
 
-    # TODO: This should be removed from here, and be placed in the
-    # different dedicated templates for each release
     if args.release in DEBIAN_RELEASES[:6]:
         apt_flag = "--force-yes"
     else:
         apt_flag = "--allow-unauthenticated --allow-downgrades"
 
-    # TODO: This should be customizable
     default_packages = " ".join(["aptitude", "nano", "adduser"])
 
-    # TODO: Clean that up?
     binary_packages = []
     fixed_version = ""
     for item in cve_details:

@@ -43,7 +43,7 @@ def test_get_cve_info_cve_2020_7247(bullseye_args):
     assert results[0]["release"] == "bullseye"
     assert results[0]["fixed_version"] == "6.6.2p1-1"
 
-    results = get_vuln_version(results)
+    results = get_vuln_version(bullseye_args, results)
     assert results[0]["vuln_version"] == "6.6.1p1-5"
 
     results = get_hash_and_bin_names(bullseye_args, results)
@@ -63,7 +63,7 @@ def test_get_cve_info_cve_2014_0160(wheezy_args):
     assert results[0]["release"] == "wheezy"
     assert results[0]["fixed_version"] == "1.0.1e-2+deb7u5"
 
-    results = get_vuln_version(results)
+    results = get_vuln_version(wheezy_args, results)
     assert results[0]["vuln_version"] == "1.0.1e-2+deb7u4"
 
     results = get_hash_and_bin_names(wheezy_args, results)

@@ -26,6 +26,7 @@ def bullseye_args():
         fixed_version=None,
         cache_main_json_file=None,
         bin_package=None,
+        vulnerable_version=None,
     )
 
 
@@ -36,4 +37,5 @@ def wheezy_args():
         fixed_version=None,
         cache_main_json_file=None,
         bin_package=None,
+        vulnerable_version=None,
     )
