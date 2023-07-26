@@ -86,10 +86,10 @@ def arg_parsing(args=None):
         default="./default",
     )
     parser.add_argument(
-        "--fixed-version",
-        dest="fixed_version",
+        "--vulnerable-version",
+        dest="vulnerable_version",
         type=str,
-        help="The fixed version number of the package",
+        help="Specify the vulnerable version number of the package",
     )
     parser.add_argument(
         "-p",
@@ -315,13 +315,10 @@ def get_cve_details_from_json(args: argparse.Namespace) -> list[dict]:
         if args.release not in cve_info["releases"]:
             continue
 
-        if args.fixed_version:
-            fixed_version = args.fixed_version
+        if cve_info["releases"][args.release]["status"] == "open":
+            fixed_version = "(unfixed)"
         else:
-            if cve_info["releases"][args.release]["status"] == "open":
-                fixed_version = "(unfixed)"
-            else:
-                fixed_version = cve_info["releases"][args.release]["fixed_version"]
+            fixed_version = cve_info["releases"][args.release]["fixed_version"]
         if fixed_version == "0":
             raise CVENotFound(
                 f"Debian {args.release} was not affected by {cve_id}.\n"
@@ -342,8 +339,11 @@ def get_cve_details_from_json(args: argparse.Namespace) -> list[dict]:
     return results
 
 
-def get_vuln_version(cve_details: list[dict]) -> list[dict]:
+def get_vuln_version(args: argparse.Namespace, cve_details: list[dict]) -> list[dict]:
     for item in cve_details:
+        if args.vulnerable_version:
+            item["vuln_version"] = args.vulnerable_version
+            continue
         url = f"http://snapshot.debian.org/mr/package/{item['src_package']}/"
         response = requests.get(url, timeout=DEFAULT_TIMEOUT).json()["result"]
         known_versions = [x["version"] for x in response if "~bpo" not in x["version"]]
@@ -575,7 +575,7 @@ def main():  # pragma: no cover
     print(f"CVE details fetched.\n {cve_details}\n\n")
 
     print("Getting the vulnerable version.")
-    cve_details = get_vuln_version(cve_details)
+    cve_details = get_vuln_version(args, cve_details)
     print(f"vulnerable version : {cve_details[0]['vuln_version']}\n\n")
 
     print("Getting the hash of the package")
