@@ -9,7 +9,7 @@ RUN DEBIAN_FRONTEND=non-interactive aptitude -y --allow-untrusted -o Aptitude::P
 
 ARG USERNAME=toto
 ARG PASSWORD=toto
-RUN useradd -m ${USERNAME} && printf "${PASSWORD}\n${PASSWORD}\n" | passwd ${USERNAME} 2> /dev/null
+RUN useradd -m ${USERNAME} -s /bin/bash && printf "${PASSWORD}\n${PASSWORD}\n" | passwd ${USERNAME} 2> /dev/null
 
 {% if run_lines %}{% for line in run_lines %}RUN {{line}}
 {% endfor %}{% endif %}
