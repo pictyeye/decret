@@ -188,6 +188,7 @@ def get_exploit(browser, args: argparse.Namespace):
     )
 
     i = 0
+    urls = []
     for row in exploit_table.find_elements(By.XPATH, "./tr"):
         if row.text == "No data available in table":
             return 0
@@ -197,15 +198,20 @@ def get_exploit(browser, args: argparse.Namespace):
         )
 
         exploit_filename = f"exploit_{i}"
+        exploit_url_filename = f"exploit_{i}.url"
         if verified:
             exploit_filename += "_verified"
         exploit_path = args.directory / exploit_filename
+        exploit_url_path = args.directory / exploit_url_filename
 
         headers = {"User-agent": "curl/7.74.0"}
         exploit = requests.get(link_exploit, headers=headers, timeout=DEFAULT_TIMEOUT)
         exploit_path.write_bytes(exploit.content)
+        exploit_url_path.write_text(f"{link_exploit}\n")
+
+        urls.append(link_exploit)
         i += 1
-    return i
+    return urls
 
 
 def prepare_browser():
@@ -582,8 +588,11 @@ def main():  # pragma: no cover
     if browser:
         try:
             # Get the exploits from https://www.exploit-db.com/
-            n_exploits = get_exploit(browser, args)
-            print(f"PoC : Found {n_exploits} exploits.")
+            exploit_urls = get_exploit(browser, args)
+            n_exploits = len(exploit_urls)
+            print(f"PoC: Found {n_exploits} exploits")
+            for url in exploit_urls:
+                print(f"      {url}")
         except WebDriverException as exc:
             print(f"Warning: could not fetch exploits properly: {exc}", file=sys.stderr)
         finally:
