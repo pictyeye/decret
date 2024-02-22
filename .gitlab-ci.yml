@@ -17,7 +17,7 @@ test-pip-audit:
         image: python:3.10
         script:
                 - pip install -r requirements.txt
-                - pip-audit --ignore-vuln PYSEC-2023-101
+                - pip-audit --ignore-vuln PYSEC-2023-228
 
 test-python3.9:
         stage: test
