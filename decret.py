@@ -448,7 +448,7 @@ def write_cmdline(args: argparse.Namespace):
         cmdline_file.write("\n")
 
 
-def prepare_sources(args: argparse.Namespace, snapshot_id: str, vuln_fixed: bool):
+def prepare_sources(snapshot_id: str, vuln_fixed: bool):
     options = "[check-valid-until=no allow-insecure=yes allow-downgrade-to-insecure=yes]"
     url = f"http://snapshot.debian.org/archive/debian/{snapshot_id}/"
     if vuln_fixed:
@@ -471,12 +471,10 @@ def write_dockerfile(args: argparse.Namespace, cve_details, source_lines: list[s
     default_packages = " ".join(["aptitude", "nano", "adduser"])
 
     binary_packages = []
-    fixed_version = ""
     for item in cve_details:
         for bin_name in item["bin_name"]:
             bin_name_and_version = [bin_name + f"={item['vuln_version']}"]
             binary_packages.extend(bin_name_and_version)
-            fixed_version = fixed_version + f"{bin_name}={item['fixed_version']} "
 
     content = template.render(
         debian_release=args.release,
@@ -484,7 +482,6 @@ def write_dockerfile(args: argparse.Namespace, cve_details, source_lines: list[s
         apt_flag=apt_flag,
         default_packages=default_packages,
         package_name=" ".join(binary_packages),
-        fixed_version=fixed_version,
         run_lines=args.run_lines,
         cmd_line=args.cmd_line
     )
@@ -533,7 +530,7 @@ def run_docker(args):
         raise FatalError("Error while running the container") from exc
 
 
-def main():  # pragma: no cover
+def init_decret():  # pragma: no cover
     # First handle the parameters
     args = arg_parsing()
     check_requirements(args)
@@ -552,6 +549,11 @@ def main():  # pragma: no cover
             )
             browser = None
             args.selenium = None
+
+    return args, browser
+
+def main():  # pragma: no cover
+    args, browser = init_decret()
 
     # Then get the details for the given CVE
     try:
@@ -598,7 +600,7 @@ def main():  # pragma: no cover
         finally:
             browser.quit()
 
-    source_lines = prepare_sources(args, snapshot_id, vuln_fixed)
+    source_lines = prepare_sources(snapshot_id, vuln_fixed)
     if not vuln_fixed:
         print(f"\n\nVulnerability unfixed. Using a {LATEST_RELEASE} container.\n\n")
         args.release = LATEST_RELEASE
