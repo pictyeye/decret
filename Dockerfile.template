@@ -1,8 +1,9 @@
 FROM debian:{{debian_release}}
 
-COPY snapshot.list /etc/apt/sources.list.d/snapshot.list
+{% for source_line in source_lines %}RUN echo '{{source_line}}' >> /etc/apt/sources.list.d/snapshot.list
+{% endfor %}
 
-RUN apt-get -o Acquire::Check-Valid-Until=false -o Acquire::AllowInsecureRepositories=true -o Acquire::AllowDowngradeToInsecureRepositories=true update
+RUN apt-get update
 {% if default_packages %}RUN apt-get install -y {{apt_flag}} --fix-missing {{default_packages}}
 {% endif %}
 RUN DEBIAN_FRONTEND=non-interactive aptitude -y --allow-untrusted -o Aptitude::ProblemResolver::SolutionCost='100*canceled-actions,200*removals' install {{package_name}}

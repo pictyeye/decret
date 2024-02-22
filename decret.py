@@ -442,17 +442,15 @@ def write_cmdline(args: argparse.Namespace):
         cmdline_file.write("\n")
 
 
-def write_sources(args: argparse.Namespace, snapshot_id: str, vuln_fixed: bool):
-    sources_path = args.directory / "snapshot.list"
-    with sources_path.open("w", encoding="utf-8") as sources_file:
-        if vuln_fixed:
-            url = f"http://snapshot.debian.org/archive/debian/{snapshot_id}/"
-            release = ["testing", "stable", "unstable"]
-        for rel in release:
-            sources_file.write(f"deb {url} {rel} main\n")
+def prepare_sources(args: argparse.Namespace, snapshot_id: str, vuln_fixed: bool):
+    options = "[check-valid-until=no allow-insecure=yes allow-downgrade-to-insecure=yes]"
+    url = f"http://snapshot.debian.org/archive/debian/{snapshot_id}/"
+    if vuln_fixed:
+        release = ["testing", "stable", "unstable"]
+    return [f"deb {options} {url} {rel} main" for rel in release]
 
 
-def write_dockerfile(args: argparse.Namespace, cve_details):
+def write_dockerfile(args: argparse.Namespace, cve_details, source_lines: list[str]):
     target_dockerfile = args.directory / "Dockerfile"
     decret_rootpath = Path(__file__).resolve().parent
     src_template = decret_rootpath / "Dockerfile.template"
@@ -476,6 +474,7 @@ def write_dockerfile(args: argparse.Namespace, cve_details):
 
     content = template.render(
         debian_release=args.release,
+        source_lines=source_lines,
         apt_flag=apt_flag,
         default_packages=default_packages,
         package_name=" ".join(binary_packages),
@@ -590,12 +589,12 @@ def main():  # pragma: no cover
         finally:
             browser.quit()
 
-    write_sources(args, snapshot_id, vuln_fixed)
+    source_lines = prepare_sources(args, snapshot_id, vuln_fixed)
     if not vuln_fixed:
         print(f"\n\nVulnerability unfixed. Using a {LATEST_RELEASE} container.\n\n")
         args.release = LATEST_RELEASE
 
-    write_dockerfile(args, cve_details)
+    write_dockerfile(args, cve_details, source_lines)
     write_cmdline(args)
     if args.only_create_dockerfile:
         print("My work here is done.")
