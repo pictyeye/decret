@@ -41,6 +41,7 @@ DEBIAN_RELEASES = [
     "stretch",
     "buster",
     "bullseye",
+    "bookworm",
 ]
 
 LATEST_RELEASE = DEBIAN_RELEASES[-1]
@@ -150,7 +151,9 @@ def arg_parsing(args=None):
 
     namespace = parser.parse_args(args)
 
-    if not re.match(r"^2\d{3}-(0\d{3}|[1-9]\d{3,})$", namespace.cve_number):
+    if re.match(r"^CVE-2\d{3}-(0\d{3}|[1-9]\d{3,})$", namespace.cve_number):
+        namespace.cve_number=namespace.cve_number[4:]
+    elif not re.match(r"^2\d{3}-(0\d{3}|[1-9]\d{3,})$", namespace.cve_number):
         parser.print_usage(sys.stderr)
         raise FatalError("Wrong CVE format.")
 
@@ -191,7 +194,7 @@ def get_exploit(browser, args: argparse.Namespace):
     urls = []
     for row in exploit_table.find_elements(By.XPATH, "./tr"):
         if row.text == "No data available in table":
-            return 0
+            return []
         link_exploit = row.find_element(By.XPATH, "./td[2]/a").get_attribute("href")
         verified = bool(
             "check" in row.find_element(By.XPATH, "./td[4]/i").get_attribute("class")
