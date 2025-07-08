@@ -461,8 +461,7 @@ def write_cmdline(args: argparse.Namespace):
 def prepare_sources(snapshot_id: str, vuln_fixed: bool):
     options = "[check-valid-until=no allow-insecure=yes allow-downgrade-to-insecure=yes]"
     url = f"http://snapshot.debian.org/archive/debian/{snapshot_id}/"
-    if vuln_fixed:
-        release = ["testing", "stable", "unstable"]
+    release = ["testing", "stable", "unstable"]
     return [f"deb {options} {url} {rel} main" for rel in release]
 
 
