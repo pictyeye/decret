@@ -1,3 +1,4 @@
+# pragma: no cover
 import sys
 from decret.decret import main
 from decret.config import FatalError

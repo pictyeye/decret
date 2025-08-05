@@ -4,6 +4,7 @@ black==25.1.0
 certifi==2025.8.3
 charset-normalizer==3.4.2
 click==8.2.1
+coverage==7.10.2
 dill==0.4.0
 idna==3.10
 iniconfig==2.1.0
@@ -24,6 +25,9 @@ Pygments==2.19.2
 pylint==3.3.7
 pylint-pytest==1.1.8
 pytest==8.2.0
+pytest-cov==6.2.1
+pytest-cover==3.0.0
+pytest-coverage==0.0
 python-dateutil==2.9.0.post0
 pytz==2025.2
 requests==2.32.4
