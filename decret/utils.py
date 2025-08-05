@@ -37,7 +37,7 @@ def check_program_is_present(
         return False
 
 
-def check_requirements():
+def check_requirements() -> None:
     check_program_is_present("Docker", ["docker", "-v"])
 
 
@@ -54,10 +54,10 @@ HASH_PATH = CACHE_PATH / "files_exploits.hash"
 CSV_PATH = CACHE_PATH / FILE_PATH
 
 
-def db_is_up_to_date():
-    """
-    Returns a tuple ( bool * string),
-    indicating if the db is up to date and the new hash if so
+def db_is_up_to_date() -> tuple[bool, str]:
+    """Returns a tuple indicating if the db is up to date and the new
+    hash if so
+
     """
 
     head = requests.head(URL, timeout=DEFAULT_TIMEOUT)
@@ -75,7 +75,7 @@ def db_is_up_to_date():
     return (stored_blob_hash == blob_hash, blob_hash)
 
 
-def download_db():
+def download_db() -> None:
     # DOCS: https://docs.gitlab.com/api/repository_files/#get-file-metadata-only
 
     print("Cheking if the cache from exploit-db is up to date")
@@ -174,7 +174,7 @@ def get_exploits(args):
 # ====================== Version comparison =========================
 
 
-def version_tuple(version_str):
+def version_tuple(version_str: str):
     # Information on version convention:
     #   https://www.debian.org/doc/debian-policy/ch-controlfields.html#special-version-conventions
     # Removing epoch and revision
